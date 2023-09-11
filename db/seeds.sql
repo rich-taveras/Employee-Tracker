@@ -20,3 +20,4 @@ INSERT INTO employees (first_name, last_name, role_id, manager_id) VALUES
   ('Bob', 'Williams', 3, 2),    
   ('Eva', 'Davis', 3, 2);       
 
+UPDATE employees SET manage_id = manager
