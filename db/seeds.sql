@@ -1,23 +1,19 @@
-USE tu_base_de_datos;
+USE employees_db;
 
-INSERT INTO departments (department_name) VALUES
-  ('Sales'),
-  ('Engineering'),
-  ('Finance'),
-  ('Marketing');
+INSERT INTO department (name)
+VALUES ("Sales"),
+       ("Enigneering");
 
-INSERT INTO roles (title, salary, department_id) VALUES
-  ('Sales Manager', 80000.00, 1),
-  ('Sales Representative', 45000.00, 1),
-  ('Software Engineer', 95000.00, 2),
-  ('Financial Analyst', 60000.00, 3),
-  ('Marketing Coordinator', 55000.00, 4);
+INSERT INTO role (title,salary,department_id)
+VALUES ("Sales Lead",100000,1),
+       ("Sales Person",80000,1),
+       ("Lead Engineer",150000,2),
+       ("Software Engineer",120000,2);
 
-INSERT INTO employees (first_name, last_name, role_id, manager_id) VALUES
-  ('John', 'Doe', 1, NULL),     
-  ('Jane', 'Smith', 2, 1),      
-  ('Alice', 'Johnson', 4, 1),   
-  ('Bob', 'Williams', 3, 2),    
-  ('Eva', 'Davis', 3, 2);       
 
-UPDATE employees SET manage_id = manager
+INSERT INTO employee (first_name,last_name,role_id)
+VALUES ("John","Doe",1),
+       ("Mike","Chan",2),
+       ("Ashley","Rodriguez",3);
+
+UPDATE   employee SET  manager_id =  1  WHERE id=2; 
