@@ -3,6 +3,12 @@ const inquirer = require("inquirer");
 const { printTable } = require("console-table-printer");
 const db = require("./server");
 
+console.log ("********************");
+console.log ("*                  *");
+console.log ("* EMPLOYEE TRACKER *");
+console.log ("*                  *");
+console.log ("********************");
+
 function userPrompt() {
   inquirer
     .prompt([
@@ -61,7 +67,7 @@ function userPrompt() {
         deleteRoles();
       } else if (response.menu === "Delete Employees") {
         deleteEmployees();
-      } else if (response.menu === "Quit") {
+      } else if (response.menu === "Exit") {
         quit();
       }
     });
