@@ -3,6 +3,9 @@
 ## Overview
 The Employee Tracker is a web-based application designed to help businesses manage their employee information efficiently. This system provides functionalities to add, edit, delete, and search for employee records. It also allows for categorization based on departments and positions.
 
+## Video
+
+
 ## Table of Contents
 Features
 Getting Started

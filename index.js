@@ -1,129 +1,363 @@
-const inquirer=require("inquirer")
-const mysql=require("mysql2")
-const {printTable}=require("console-table-printer")
-require("dotenv").config()
+const { log } = require("console");
+const inquirer = require("inquirer");
+const { printTable } = require("console-table-printer");
+const db = require("./server");
 
-const db= mysql.createConnection({
-    host:"localhost",
-    user:process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database:process.env.DB_NAME,
-    port:3306
-})
-db.connect(()=>{
-    mainMenu()
-})
-
-/*
-view all departments, view all roles, view all employees, add a department, add a role, add an employee, and update an employee role
-*/
-
-function mainMenu(){
-    inquirer.prompt({
-        type:"list",
-        message:"What would you like to do?",
-        name:"selection",
-        choices:["View all departments", "View all roles","View all employees","Add a department","Add a role","Add an employee","Update an employee role","Exit"]
-    })
-    .then(answer=>{
+function userPrompt() {
+  inquirer
+    .prompt([
+      {
+        type: "list",
+        name: "menu",
+        message: "What would you like to do? ↑ ↓",
+        choices: [
+          "View All Employees",
+          "View All Departments",
+          "View All Roles",
+          "View Employee By Department",
+          "Update Employee Role",
+          "Update employees Manager",
+          "Add Employee",
+          "Add Departments",
+          "Add Role",
+          "Delete Departments",
+          "Delete Roles",
+          "Delete Employees",
+          "Quit",
+        ],
+      },
+    ])
+    .then((response) => {
+      if (response.menu === "View All Employees") {
         
-        if(answer.selection==="view all employees"){
-            viewEmployees()
-        }else if(answer.selection==="add an employee"){
-            addEmployee()
+        viewAllEmployee();
+      } else if (response.menu === "View All Departments") {
+        
+        viewAllDepartment();
+      } else if (response.menu === "View All Roles") {
+        
+        viewAllRole();
+      } else if (response.menu === "View Employee By Department") {
+        viewEmployeeByDepartment();
+      } else if (response.menu === "Update Employee Role") {
+        
+        updateEmployeeRole();
+      } else if (response.menu === "Update employees Manager") {
+        
+        updateEmployeeManager();
+      } else if (response.menu === "Add Employee") {
+        
+        addEmployee();
+      } else if (response.menu === "Add Departments") {
+        
+        addDepartments();
+      } else if (response.menu === "Add Role") {
+        
+        addRole();
+      } else if (response.menu === "Delete Departments") {
+        
+        deleteDepartment();
+      } else if (response.menu === "Delete Roles") {
+        deleteRoles();
+      } else if (response.menu === "Delete Employees") {
+        deleteEmployees();
+      } else if (response.menu === "Quit") {
+        quit();
+      }
+    });
+}
+
+function viewAllEmployee() {
+  db.query(
+    "SELECT employee.id, employee.first_name, employee.last_name, title, name AS department, salary, CONCAT( bosses.first_name, ' ',bosses.last_name) AS manager FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON department.id  = role.department_id LEFT JOIN employee AS bosses ON employee.manager_id = bosses.id",
+    function (err, results) {
+      printTable(results);
+      userPrompt();
+    }
+  );
+}
+
+function viewAllDepartment() {
+  db.query("SELECT * FROM department", function (err, results) {
+    printTable(results);
+    userPrompt();
+  });
+}
+
+function viewAllRole() {
+  db.query(
+    "SELECT role.id, title, salary, name AS department FROM role LEFT JOIN department ON department.id = role.department_id",
+    function (err, results) {
+      printTable(results);
+      userPrompt();
+    }
+  );
+}
+
+function viewEmployeeByDepartment() {
+  db.query(
+    "SELECT employee.first_name, employee.last_name, department.name AS department FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.department_id = department.id",
+    function (err, results) {
+      printTable(results);
+      userPrompt();
+    }
+  );
+}
+
+function updateEmployeeRole() {
+  db.query("SELECT id AS value, title as name FROM role", (err, roleData) => {
+    db.query(
+      "SELECT id AS value, CONCAT(first_name, ' ',last_name) AS name FROM employee",
+      (err, employeeData) => {
+        inquirer
+          .prompt([
+            {
+              type: "list",
+              message: "Choose the following title",
+              name: "title_id",
+              choices: roleData,
+            },
+            {
+              type: "list",
+              message: "Choose the following Employee",
+              name: "employee_id",
+              choices: employeeData,
+            },
+          ])
+          .then((answer) => {
+            db.query(
+              "Update employee SET role_id = ? WHERE id = ?",
+              [answer.title_id, answer.employee_id],
+              (err) => {
+                viewAllEmployee();
+                userPrompt();
+              }
+            );
+          });
+      }
+    );
+  });
+}
+
+function updateEmployeeManager() {
+  db.query(
+    "SELECT id AS value, CONCAT(first_name, ' ',last_name) AS name FROM employee",
+    (err, managerData) => {
+      db.query(
+        "SELECT id AS value, CONCAT(first_name, ' ',last_name) AS name FROM employee",
+        (err, employeeData) => {
+          inquirer
+            .prompt([
+              {
+                type: "list",
+                message: "Choose the following employee",
+                name: "employee_id",
+                choices: employeeData,
+              },
+              {
+                type: "list",
+                message: "Choose the following Manager",
+                name: "manager_id",
+                choices: managerData,
+              },
+            ])
+            .then((answer) => {
+              db.query(
+                "Update employee SET manager_id = ? WHERE id = ?",
+                [answer.manager_id, answer.employee_id],
+                (err) => {
+                  viewAllEmployee();
+                  userPrompt();
+                }
+              );
+            });
         }
-        else if(answer.selection==="update an employee role"){
-           updateEmployeeRole()        
+      );
+    }
+  );
+}
+
+function addEmployee() {
+  db.query("SELECT id AS value, title as name FROM role", (err, roleData) => {
+    db.query(
+      "SELECT id AS value, CONCAT(first_name, ' ',last_name) AS name FROM employee WHERE manager_id is null",
+      (err, managerData) => {
+        inquirer
+          .prompt([
+            {
+              type: "input",
+              message: "What is your First Name",
+              name: "first_name",
+            },
+            {
+              type: "input",
+              message: "What is your Last Name",
+              name: "last_name",
+            },
+            {
+              type: "list",
+              message: "Choose the following title",
+              name: "role_id",
+              choices: roleData,
+            },
+            {
+              type: "list",
+              message: "Choose the following Manager",
+              name: "manager_id",
+              choices: managerData,
+            },
+          ])
+          .then((answer) => {
+            db.query(
+              "INSERT INTO employee (first_name,last_name, role_id, manager_id) VALUES (?,?,?,?)",
+              [
+                answer.first_name,
+                answer.last_name,
+                answer.role_id,
+                answer.manager_id,
+              ],
+              (err) => {
+                viewAllEmployee();
+              }
+            );
+          });
+      }
+    );
+  });
+}
+
+function addDepartments() {
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        message: "What department do you want to add?",
+        name: "departmentName",
+        validate: (departmentName) => {
+          if (departmentName) {
+            return true;
+          } else return false;
+        },
+      },
+    ])
+    .then((answer) => {
+      db.query(
+        "INSERT INTO department (name) VALUES (?)",
+        [answer.departmentName],
+        (err) => {
+          viewAllDepartment();
         }
-
-    })
+      );
+    });
 }
 
-function viewEmployees(){
-  db.query(`SELECT employee.id, employee.first_name, employee.last_name, title, name as department, salary, 
-  CONCAT( bosses.first_name, ' ',bosses.last_name) as manager 
-  from employee
-  left join role on employee.role_id = role.id
-  left join department on department.id = role.department_id
-  left join employee as bosses on employee.manager_id=bosses.id;`, (err,data)=>{
-    printTable(data)
-    mainMenu()
-  })
+function addRole() {
+  db.query("SELECT * FROM department", (err, departmentData) => {
+    inquirer
+      .prompt([
+        {
+          type: "input",
+          message: "What is the title of the Role?",
+          name: "role",
+          validate: (role) => {
+            if (role) {
+              return true;
+            } else console.log("Please enter a role");
+            return false;
+          },
+        },
+        {
+          type: "input",
+          message: "What is the salary of the Role?",
+          name: "salary",
+          validate: (salary) => {
+            if (salary) {
+              return true;
+            } else console.log("Please enter a Salary");
+            return false;
+          },
+        },
+        {
+          type: "list",
+          message: "Wich department does the role belong to?",
+          name: "department",
+          choices: departmentData,
+        },
+      ])
+      .then((answer) => {
+        db.query(
+          `INSERT INTO role (title, salary, department_id) VALUES ("${answer.role}",${answer.salary},(SELECT id from department WHERE name = "${answer.department}"))`,
+          (err) => {
+            viewAllRole();
+          }
+        );
+      });
+  });
 }
-function addEmployee(){
-  db.query("SELECT id as value,title as name from role ", (err,roleData)=>{
-     db.query("SELECT id as value, CONCAT(first_name,' ', last_name) as name FROM employee WHERE manager_id is null", (err, managerData)=>{
-         inquirer.prompt([
-            {
-                type:"input",
-                message:"What is the first name?",
-                name:"first_name"
-                 
-            },
-            {
-                type:"input",
-                message:"What is the last name?",
-                name:"last_name"
-                 
-            },
-            {
-                type:"list",
-                message:"Choose the following title:",
-                name:"role_id",
-                choices:roleData
-                 
-            },
-            {
-                type:"list",
-                message:"Choose the following manager:",
-                name:"manager_id",
-                choices: managerData
-                 
-            },
- 
-         ]).then(answer=>{
-            db.query("INSERT INTO employee (first_name,last_name,role_id,manager_id) VALUES(?,?,?,?)",[answer.first_name, answer.last_name,answer.role_id,answer.manager_id],err=>{
-                viewEmployees()
-            })
-         })
-     })
-  })
 
+function deleteDepartment() {
+  db.query("SELECT * FROM department", (err, departmentData) => {
+    inquirer
+      .prompt({
+        type: "list",
+        message: "Select the department to Delete",
+        name: "department",
+        choices: departmentData,
+      })
+      .then((answer) => {
+        db.query(
+          `DELETE FROM department WHERE name = "${answer.department}"`,
+          (err) => {
+            viewAllDepartment();
+          }
+        );
+      });
+  });
 }
-function updateEmployeeRole(){
-    db.query("SELECT id as value,title as name from role ", (err,roleData)=>{
-        db.query("SELECT id as value, CONCAT(first_name,' ', last_name) as name FROM employee  ", (err, employeeData)=>{
-            inquirer.prompt([
-               
-               {
-                   type:"list",
-                   message:"Choose the following title:",
-                   name:"role_id",
-                   choices:roleData
-                    
-               },
-               {
-                   type:"list",
-                   message:"Choose the following employee:",
-                   name:"employee_id",
-                   choices: employeeData
-                    
-               },
-    
-            ]).then(answer=>{
-               db.query("UPDATE employee SET role_id = ? WHERE id= ? ",[answer.role_id,answer.employee_id],err=>{
-                   viewEmployees()
-               })
-            })
+
+function deleteRoles() {
+  db.query("SELECT id AS value, title as name FROM role", (err, roleData) => {
+    inquirer
+      .prompt({
+        type: "list",
+        message: "Select the role to delete",
+        name: "roleName",
+        choices: roleData,
+      })
+      .then((answer) => {
+        db.query(`DELETE FROM role WHERE id = "${answer.roleName}"`, (err) => {
+          viewAllRole();
+        });
+      });
+  });
+}
+
+function deleteEmployees() {
+  db.query(
+    "SELECT id AS value, CONCAT(first_name, ' ',last_name) AS name FROM employee",
+    (err, employeeData) => {
+      inquirer
+        .prompt({
+          type: "list",
+          message: "Select the employee to delete",
+          name: "employeeName",
+          choices: employeeData,
         })
-     })
+        .then((answer) => {
+          db.query(
+            `DELETE FROM employee WHERE id = "${answer.employeeName}"`,
+            (err) => {
+              viewAllEmployee();
+            }
+          );
+        });
+    }
+  );
 }
 
-// function Exit() {
-//     console.log("Exiting Employee Tracker...");
-//     // Add any cleanup or exit code here if needed
-    
-//     process.exit(); // This will exit the Node.js process
-// }
+function quit() {
+  console.log("Goodbye!");
+  process.exit();
+}
 
-// Exit();
+userPrompt();
