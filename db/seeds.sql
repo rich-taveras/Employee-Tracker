@@ -26,3 +26,5 @@ VALUES  ("John", "Doe", 1, NULL),
         ("Malia", "Brown", 6, 5),
         ("Sarah", "Lourd", 7, NULL),
         ("Chefzits", "Allen", 7, 7);
+
+        UPDATE employee SET manager_id =1 WHERE id=2;

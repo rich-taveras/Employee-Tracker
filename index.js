@@ -1,73 +1,77 @@
-const { log } = require("console");
+// const { log } = require("console");
 const inquirer = require("inquirer");
+const mysql = require("mysql2");
 const { printTable } = require("console-table-printer");
-const db = require("./server");
+require("dotenv").config();
 
-console.log ("********************");
-console.log ("*                  *");
-console.log ("* EMPLOYEE TRACKER *");
-console.log ("*                  *");
-console.log ("********************");
+// const db = require("./server");
 
-function userPrompt() {
+const db = mysql.createConnection({
+  host: "localhost",
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: 3306,
+});
+
+db.connect(() => {
+  mainselection();
+});
+
+console.log("********************");
+console.log("*                  *");
+console.log("* EMPLOYEE TRACKER *");
+console.log("*                  *");
+console.log("********************");
+
+function mainselection() {
   inquirer
-    .prompt([
-      {
-        type: "list",
-        name: "menu",
-        message: "What would you like to do? ↑ ↓",
-        choices: [
-          "View All Employees",
-          "View All Departments",
-          "View All Roles",
-          "View Employee By Department",
-          "Update Employee Role",
-          "Update employees Manager",
-          "Add Employee",
-          "Add Departments",
-          "Add Role",
-          "Delete Departments",
-          "Delete Roles",
-          "Delete Employees",
-          "Quit",
-        ],
-      },
-    ])
-    .then((response) => {
-      if (response.menu === "View All Employees") {
-        
+    .prompt({
+      type: "list",
+      message: "What would you like to do? ↑ ↓",
+      name: "selection",
+      choices: [
+        "View All Departments",
+        "View All Roles",
+        "View All Employees",
+        "View Employee By Department",
+        "Update Employee Role",
+        "Update employees Manager",
+        "Add Employee",
+        "Add Departments",
+        "Add Role",
+        "Delete Departments",
+        "Delete Roles",
+        "Delete Employees",
+        "Quit",
+      ],
+    })
+    .then((answer) => {
+      if (answer.selection === "View All Employees") {
         viewAllEmployee();
-      } else if (response.menu === "View All Departments") {
-        
+      } else if (answer.selection === "View All Departments") {
         viewAllDepartment();
-      } else if (response.menu === "View All Roles") {
-        
+      } else if (answer.selection === "View All Roles") {
         viewAllRole();
-      } else if (response.menu === "View Employee By Department") {
+      } else if (answer.selection === "View Employee By Department") {
         viewEmployeeByDepartment();
-      } else if (response.menu === "Update Employee Role") {
-        
+      } else if (answer.selection === "Update Employee Role") {
         updateEmployeeRole();
-      } else if (response.menu === "Update employees Manager") {
-        
+      } else if (answer.selection === "Update employees Manager") {
         updateEmployeeManager();
-      } else if (response.menu === "Add Employee") {
-        
+      } else if (answer.selection === "Add Employee") {
         addEmployee();
-      } else if (response.menu === "Add Departments") {
-        
+      } else if (answer.selection === "Add Departments") {
         addDepartments();
-      } else if (response.menu === "Add Role") {
-        
+      } else if (answer.selection === "Add Role") {
         addRole();
-      } else if (response.menu === "Delete Departments") {
-        
+      } else if (answer.selection === "Delete Departments") {
         deleteDepartment();
-      } else if (response.menu === "Delete Roles") {
+      } else if (answer.selection === "Delete Roles") {
         deleteRoles();
-      } else if (response.menu === "Delete Employees") {
+      } else if (answer.selection === "Delete Employees") {
         deleteEmployees();
-      } else if (response.menu === "Exit") {
+      } else if (answer.selection === "Exit") {
         quit();
       }
     });
@@ -76,26 +80,26 @@ function userPrompt() {
 function viewAllEmployee() {
   db.query(
     "SELECT employee.id, employee.first_name, employee.last_name, title, name AS department, salary, CONCAT( bosses.first_name, ' ',bosses.last_name) AS manager FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON department.id  = role.department_id LEFT JOIN employee AS bosses ON employee.manager_id = bosses.id",
-    function (err, results) {
-      printTable(results);
-      userPrompt();
+    (err, data) => {
+      printTable(data);
+      mainselection();
     }
   );
 }
 
 function viewAllDepartment() {
-  db.query("SELECT * FROM department", function (err, results) {
-    printTable(results);
-    userPrompt();
+  db.query("SELECT * FROM department", function (err, data) {
+    printTable(data);
+    mainselection();
   });
 }
 
 function viewAllRole() {
   db.query(
     "SELECT role.id, title, salary, name AS department FROM role LEFT JOIN department ON department.id = role.department_id",
-    function (err, results) {
-      printTable(results);
-      userPrompt();
+    function (err, data) {
+      printTable(data);
+      mainselection();
     }
   );
 }
@@ -103,9 +107,9 @@ function viewAllRole() {
 function viewEmployeeByDepartment() {
   db.query(
     "SELECT employee.first_name, employee.last_name, department.name AS department FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.department_id = department.id",
-    function (err, results) {
-      printTable(results);
-      userPrompt();
+    function (err, data) {
+      printTable(data);
+      mainselection();
     }
   );
 }
@@ -136,7 +140,7 @@ function updateEmployeeRole() {
               [answer.title_id, answer.employee_id],
               (err) => {
                 viewAllEmployee();
-                userPrompt();
+                mainselection();;
               }
             );
           });
@@ -173,7 +177,7 @@ function updateEmployeeManager() {
                 [answer.manager_id, answer.employee_id],
                 (err) => {
                   viewAllEmployee();
-                  userPrompt();
+                  mainselection();
                 }
               );
             });
@@ -363,7 +367,4 @@ function deleteEmployees() {
 
 function quit() {
   console.log("Goodbye!");
-  process.exit();
 }
-
-userPrompt();
