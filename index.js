@@ -15,7 +15,7 @@ const db = mysql.createConnection({
 });
 
 db.connect(() => {
-  mainselection();
+  mainSelection();
 });
 
 console.log("********************");
@@ -24,7 +24,7 @@ console.log("* EMPLOYEE TRACKER *");
 console.log("*                  *");
 console.log("********************");
 
-function mainselection() {
+function mainSelection() {
   inquirer
     .prompt({
       type: "list",
@@ -71,7 +71,7 @@ function mainselection() {
         deleteRoles();
       } else if (answer.selection === "Delete Employees") {
         deleteEmployees();
-      } else if (answer.selection === "Exit") {
+      } else if (answer.selection === "Quit") {
         quit();
       }
     });
@@ -82,7 +82,7 @@ function viewAllEmployee() {
     "SELECT employee.id, employee.first_name, employee.last_name, title, name AS department, salary, CONCAT( bosses.first_name, ' ',bosses.last_name) AS manager FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON department.id  = role.department_id LEFT JOIN employee AS bosses ON employee.manager_id = bosses.id",
     (err, data) => {
       printTable(data);
-      mainselection();
+      mainSelection();
     }
   );
 }
@@ -90,7 +90,7 @@ function viewAllEmployee() {
 function viewAllDepartment() {
   db.query("SELECT * FROM department", function (err, data) {
     printTable(data);
-    mainselection();
+    mainSelection();
   });
 }
 
@@ -99,7 +99,7 @@ function viewAllRole() {
     "SELECT role.id, title, salary, name AS department FROM role LEFT JOIN department ON department.id = role.department_id",
     function (err, data) {
       printTable(data);
-      mainselection();
+      mainSelection();
     }
   );
 }
@@ -109,7 +109,7 @@ function viewEmployeeByDepartment() {
     "SELECT employee.first_name, employee.last_name, department.name AS department FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.department_id = department.id",
     function (err, data) {
       printTable(data);
-      mainselection();
+      mainSelection();
     }
   );
 }
@@ -140,7 +140,7 @@ function updateEmployeeRole() {
               [answer.title_id, answer.employee_id],
               (err) => {
                 viewAllEmployee();
-                mainselection();;
+                mainSelection();;
               }
             );
           });
@@ -177,7 +177,7 @@ function updateEmployeeManager() {
                 [answer.manager_id, answer.employee_id],
                 (err) => {
                   viewAllEmployee();
-                  mainselection();
+                  mainSelection();
                 }
               );
             });
@@ -367,4 +367,5 @@ function deleteEmployees() {
 
 function quit() {
   console.log("Goodbye!");
+  process.exit();
 }
